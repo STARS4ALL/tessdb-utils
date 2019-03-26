@@ -1,0 +1,50 @@
+#!/bin/bash
+sudo tessdb_pause
+sleep 2
+
+
+
+sqlite3 /var/dbase/tess.db <<EOF
+.mode column
+.headers on
+{% for tess in excel %}
+{% if tess.mac is not defined  -%}
+-- These were automatically registered (No MAC in Excel)
+UPDATE tess_t SET registered = "Automatic" WHERE name = "{{ tess.tess }}";
+{% endif -%}
+{% endfor -%}
+
+EOF
+
+
+sqlite3 /var/dbase/tess.db <<EOF
+.mode column
+.headers on
+{% for tess in excel %}
+{% if tess.mac is defined and tess.mac == dbase[tess.tess] -%}
+-- These were manually registered (MAC equals, {{ dbase[tess.tess] }})
+UPDATE tess_t SET registered = "Manual" WHERE name = "{{ tess.tess }}";
+{% endif -%}
+{% endfor -%}
+
+EOF
+
+sqlite3 /var/dbase/tess.db <<EOF
+.mode column
+.headers on
+{% for tess in excel %}
+{% if tess.mac is defined and tess.mac != dbase[tess.tess] -%}
+-- These mey be registered automatically (MAC differs, Excel = {{ tess.mac }} DBase = {{ dbase[tess.tess] }})
+UPDATE tess_t SET registered = "Automatic" WHERE name = "{{ tess.tess }}";
+{% endif -%}
+{% endfor -%}
+
+EOF
+
+
+
+
+sudo service tessdb reload
+sleep 2
+sudo tessdb_resume
+

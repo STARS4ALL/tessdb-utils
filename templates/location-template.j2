@@ -1,0 +1,30 @@
+#!/bin/bash
+
+{% for location in locations %}
+### {{ location.tess }} ###
+sudo tess location create "{{ location.site_name }}" --longitude "{{ location.longitude }}" --latitude "{{ location.latitude }}" --elevation "{{ location.elevation }}" --dbase "{{ location.database }}"
+{% if location.country is defined -%}
+sudo tess location update "{{ location.site_name }}" --dbase "{{ location.database }}" --country "{{ location.country }}"
+{% endif -%}
+{% if location.location is defined -%}
+sudo tess location update "{{ location.site_name }}" --dbase "{{ location.database }}" --location "{{ location.location }}"
+{% endif -%}
+{% if location.tzone is defined -%}
+sudo tess location update "{{ location.site_name }}" --dbase "{{ location.database }}" --tzone "{{ location.tzone }}"
+{% endif -%}
+{% if location.owner is defined -%}
+sudo tess location update "{{ location.site_name }}" --dbase "{{ location.database }}" --owner "{{ location.owner }}"
+{% endif -%}
+{% if location.email is defined -%}
+sudo tess location update "{{ location.site_name }}" --dbase "{{ location.database }}" --email "{{ location.email }}"
+{% endif -%}
+{% if location.zipcode is defined -%}
+sudo tess location update "{{ location.site_name }}" --dbase "{{ location.database }}" --zipcode "{{ location.zipcode }}"
+{% endif -%}
+{% if location.org is defined -%}
+sudo tess location update "{{ location.site_name }}" --dbase "{{ location.database }}" --org "{{ location.org }}"
+{% endif -%}
+sudo tess instrument assign {{ location.tess }} "{{ location.site_name }}" --dbase "{{ location.database }}"
+sudo tess instrument enable {{ location.tess }}  --dbase "{{ location.database }}"
+
+{% endfor -%}

@@ -1,0 +1,13 @@
+#!/bin/bash
+sudo tessdb_pause
+sleep 2
+{% for location in locations %}
+### {{ location.tess }} ###
+{% if location.tzone is defined -%}
+sudo tess location update "{{ location.site_name }}" --dbase "{{ location.database }}" --tzone "{{ location.tzone }}"
+{% endif -%}
+
+{% endfor -%}
+sudo service tessdb reload
+sleep 2
+sudo tessdb_resume

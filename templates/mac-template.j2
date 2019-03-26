@@ -1,0 +1,19 @@
+#!/bin/bash
+sudo tessdb_pause
+sleep 2
+
+{% for tess in excel %}
+{% if tess.mac is defined  -%}
+### {{ tess.tess }} , dbase MAC {{  dbase[tess.tess] }} , excel MAC {{ tess.mac }} ###
+{%- if tess.mac != dbase[tess.tess] %} DIFER {% endif %}
+sudo tess instrument update "{{ tess.tess }}" --dbase "{{ tess.database }}" --registered Manual
+{% else -%}
+## {{ tess.tess }} , dbase MAC {{  dbase[tess.tess] }}  ###
+sudo tess instrument update "{{ tess.tess }}" --latest --dbase "{{ tess.database }}" --registered Automatic
+{% endif -%}
+
+{% endfor -%}
+sudo service tessdb reload
+sleep 2
+sudo tessdb_resume
+

@@ -1,0 +1,5 @@
+#!/bin/bash
+
+{% for item in accepted -%}
+sudo tess_ida {{ item }} -d {{ database }} -t /etc/tessdb/IDA-template.j2 -o {{ out_dir }}
+{% endfor -%}

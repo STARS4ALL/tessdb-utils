@@ -1,0 +1,7 @@
+*.csv
+*.txt
+*.db
+kk*
+my*
+sftp-config.json
+
