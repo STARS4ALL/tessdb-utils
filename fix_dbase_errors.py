@@ -43,7 +43,7 @@ import jinja2
 LINE1 = r"'runOperation' for row ({.+})"
 LINE2 = r"locked for row ({.+})"
 
-DEFAULT_FILE = "/home/rafa/tessdb/logs/errores_db.txt"
+DEFAULT_FILE = "./errores_db.txt"
 DEFAULT_DBASE = "/var/dbase/tess.db"
 DEFAULT_REP_DBASE = "/var/dbase/tess.db-*"
 DEFAULT_MODULUS = 400
