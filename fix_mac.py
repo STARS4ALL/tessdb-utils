@@ -43,17 +43,20 @@ CURRENT_DATABASE = "/var/dbase/tess.db"
 
 KEYS = [
     ['tess',       0],
-    ['mac',        9],
-    ['latitude',  11],
-    ['longitude', 12],
-    ['elevation', 13],
-    ['country',   14],
-    ['location',  15],
-    ['site_name', 16],
-    ['tzone',     19],
-    ['status',    21],
-    ['owner',     22],
-    ['email',     23],
+    ['tstamp',     1], # Fecha de calibración
+    ['zp',         7],
+    ['mac',        8],
+    ['filter',     9],
+    ['latitude',  12],
+    ['longitude', 13],
+    ['elevation', 14],
+    ['country',   15],
+    ['location',  16],
+    ['site_name', 17],
+    ['tzone',     20],
+    ['status',    22],
+    ['owner',     23],
+    ['email',     24],
 ]
   
 
