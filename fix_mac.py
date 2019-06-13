@@ -41,6 +41,7 @@ DEFAULT_TPLT = "./templates/macsql-template.j2"
 MEASURING = "Midiendo"
 CURRENT_DATABASE = "/var/dbase/tess.db"
 
+
 KEYS = [
     ['tess',       0],
     ['tstamp',     1], # Fecha de calibración
@@ -57,6 +58,7 @@ KEYS = [
     ['status',    22],
     ['owner',     23],
     ['email',     24],
+    ['org',       25],
 ]
   
 
