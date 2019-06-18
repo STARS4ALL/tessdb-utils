@@ -67,7 +67,7 @@ def open_database(options):
 def createParser():
     # create the top-level parser
     parser = argparse.ArgumentParser(prog=sys.argv[0])
-    parser.add_argument('-i', '--input_file', type=str,  default=DEFAULT_FILE, help='input file')
+    parser.add_argument('-i', '--input_file', type=str,  required=True, default=DEFAULT_FILE, help='input file')
     parser.add_argument('-d', '--dbase', default=DEFAULT_DBASE, help='SQLite operational database full file path')
     parser.add_argument('-r', '--reports-dbase', default=DEFAULT_REP_DBASE, help='SQLite reports database full file path')
     parser.add_argument('-m', '--modulus', default=DEFAULT_MODULUS, help='Print progress every N rows')
