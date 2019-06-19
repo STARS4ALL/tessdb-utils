@@ -36,7 +36,7 @@ import jinja2
 # Module constants
 # ----------------
 
-DEFAULT_FILE = "./tess_spreadsheet.csv"
+DEFAULT_FILE = "./Estado actualizado de los TESS - Calibración y localización - General.csv"
 DEFAULT_TPLT = "./templates/location-template.j2"
 MEASURING = "Midiendo"
 CURRENT_DATABASE = "/home/pi/dbase/tess.db"
