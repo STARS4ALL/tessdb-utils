@@ -97,6 +97,7 @@ def to_dict(row):
     result = dict()
     for key in KEYS:
         try:
+            # if value is empty for a given key, continue
             if row[key[1]] == '':
                 continue
             result[key[0]] = row[key[1]].strip()
@@ -113,9 +114,8 @@ def to_dict(row):
         return dict()
     if not 'status' in result:
         return dict()
-    if not result['status'].startswith(MEASURING):
-        return dict()
 
+    result['asignable'] = True if result['status'].startswith(MEASURING) else False
     result['database'] = CURRENT_DATABASE
     result['tess'] = 'stars' + str(tess_index(result['tess']))
     return result
