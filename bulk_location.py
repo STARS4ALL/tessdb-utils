@@ -42,22 +42,22 @@ MEASURING = "Midiendo"
 CURRENT_DATABASE = "/home/pi/dbase/tess.db"
 
 KEYS = [
-    ['tess',       0],
-    ['tstamp',     1], # Fecha de calibración
-    ['zp',         7],
-    ['mac',        8],
-    ['filter',     9],
+    ['tess',       0],  # TESS name
+    ['tstamp',     1],  # Fecha de calibración
+    ['zp',         7],  # Calibrated Zero Point
+    ['mac',        8],  # Device MAC
+    ['filter',     9],  # Device filter, usually UV/IR-cut
     ['latitude',  12],
     ['longitude', 13],
     ['elevation', 14],
     ['country',   15],
-    ['location',  16],
-    ['site_name', 17],
-    ['tzone',     20],
-    ['status',    22],
-    ['owner',     23],
-    ['email',     24],
-    ['org',       25],
+    ['location',  16],  
+    ['site_name', 17],  # Location site name
+    ['tzone',     20],  # Timezone
+    ['status',    22],  # Free desceriptive status
+    ['owner',     23],  # Contact name
+    ['email',     24],  # Contact email
+    ['org',       25],  # Organization
 ]
   
 
@@ -115,7 +115,7 @@ def to_dict(row):
     if not 'status' in result:
         return dict()
 
-    result['asignable'] = True if result['status'].startswith(MEASURING) else False
+    result['operable'] = True if result['status'].startswith(MEASURING) else False
     result['database'] = CURRENT_DATABASE
     result['tess'] = 'stars' + str(tess_index(result['tess']))
     return result

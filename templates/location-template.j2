@@ -24,8 +24,8 @@ sudo tess location update "{{ location.site_name }}" --dbase "{{ location.databa
 {% if location.org is defined -%}
 sudo tess location update "{{ location.site_name }}" --dbase "{{ location.database }}" --org "{{ location.org }}"
 {% endif -%}
-{% if location.asignable -%}
 sudo tess instrument assign {{ location.tess }} "{{ location.site_name }}" --dbase "{{ location.database }}"
+{% if location.operable -%}
 sudo tess instrument enable {{ location.tess }}  --dbase "{{ location.database }}"
 {% endif -%}
 {% endfor -%}
