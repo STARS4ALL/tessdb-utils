@@ -101,7 +101,7 @@ def get_photometer_list(connection):
         '''
         SELECT DISTINCT name
         FROM tess_t
-        WHERE name == "stars1"
+        -- WHERE name == "stars1"
         ORDER BY name ASC;
         ''')
     return [ item[0] for item in cursor.fetchall() ]
