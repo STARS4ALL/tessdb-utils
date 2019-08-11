@@ -166,7 +166,7 @@ def debug_reading(name, reading, msg):
 def filter_reading(name, row):
         gFIFO.append(row)
         if len(gFIFO) <= FIFO_DEPTH//2:
-            log.info("[%s] Refilling the buffer", name)
+            log.debug("[%s] Refilling the buffer", name)
             return None
         seqList   = [ item[3]  for item in gFIFO ]
         freqList  = [ item[4]  for item in gFIFO ]
