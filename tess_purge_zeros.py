@@ -51,7 +51,7 @@ FIFO_DEPTH = 7
 # Global variables
 # ----------------
 
-gFIFO = dict()
+gFIFO = deque(maxlen=FIFO_DEPTH)
 
 # -----------------------
 # Module global functions
@@ -79,7 +79,7 @@ def createParser():
 def open_database(dbase_path):
     if not os.path.exists(dbase_path):
        raise IOError("No SQLite3 Database file found at {0}. Exiting ...".format(dbase_path))
-    log.debug("Opening database %s", dbase_path)
+    log.info("Opening database %s", dbase_path)
     return sqlite3.connect(dbase_path)
 
 
@@ -102,7 +102,6 @@ def get_photometer_list(connection):
         '''
         SELECT DISTINCT name
         FROM tess_t
-        -- WHERE name == "stars1"
         ORDER BY name ASC;
         ''')
     return [ item[0] for item in cursor.fetchall() ]
@@ -158,23 +157,21 @@ def is_sequence_invalid(aList):
        
 def trace_reading(name, reading, discard):
     mark = "+++" if not discard else "---"
-    log.debug("[%s] (%02d) [%08dT%06d] [%06d] f=%s -> %s", name, reading[2], reading[0], reading[1], reading[3], reading[4], mark)
+    log.info("[%s] (%02d) [%08dT%06d] [%06d] f=%s -> %s", name, reading[2], reading[0], reading[1], reading[3], reading[4], mark)
 
 def debug_reading(name, reading, msg):
     log.debug("[%s] (%02d) [%08dT%06d] [%06d] f=%s -> %s", name, reading[2], reading[0], reading[1], reading[3], reading[4], msg)
 
 
 def filter_reading(name, row):
-        fifo   = gFIFO.get(name, deque(maxlen=FIFO_DEPTH))
-        gFIFO[name] = fifo  # Create new fifo if not already
-        fifo.append(row)
-        if len(fifo) <= FIFO_DEPTH//2:
-            log.debug("[%s] Refilling the buffer", name)
+        gFIFO.append(row)
+        if len(gFIFO) <= FIFO_DEPTH//2:
+            log.info("[%s] Refilling the buffer", name)
             return None
-        seqList   = [ item[3]  for item in fifo ]
-        freqList  = [ item[4]  for item in fifo ]
-        #log.debug("%s: seqList = %s. freqList = %s", name, seqList, freqList)
-        chosen_row = fifo[FIFO_DEPTH//2]
+        seqList   = [ item[3]  for item in gFIFO ]
+        freqList  = [ item[4]  for item in gFIFO ]
+        log.debug("%s: seqList = %s. freqList = %s", name, seqList, freqList)
+        chosen_row = gFIFO[FIFO_DEPTH//2]
         if  is_sequence_invalid(freqList):
             discard = True
             result  = chosen_row
@@ -184,15 +181,13 @@ def filter_reading(name, row):
         trace_reading(name, chosen_row, discard)
         return result
               
-              
+
 def flush_filter(name):
-    fifo   = gFIFO.get(name, deque(maxlen=FIFO_DEPTH))
-    gFIFO[name] = fifo  # Create new fifo if not already
-    while len(fifo) > FIFO_DEPTH//2:
-        row = fifo.popleft()
+    while len(gFIFO) > FIFO_DEPTH//2:
+        row = gFIFO.popleft()
         debug_reading(name, row, "--- (dupl)")
-    while len(fifo) > 0:
-        row = fifo.popleft()
+    while len(gFIFO) > 0:
+        row = gFIFO.popleft()
         trace_reading(name, row, False)
 
 
@@ -216,7 +211,7 @@ def main():
         with open(options.file, 'w') as outfile:
             outfile.write("BEGIN TRANSACTION;\n")
             for name in tess_names:
-                outfile.write("-- deleting {0} invalid readings".format(name))
+                outfile.write("-- deleting {0} invalid readings\n".format(name))
                 cursor = fetch_all_dbreadings(connection, name)
                 for reading in result_generator(cursor):
                     new_reading = filter_reading(name, reading)
