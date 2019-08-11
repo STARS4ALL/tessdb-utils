@@ -64,6 +64,7 @@ def createParser():
     parser.add_argument('file', metavar='<SQL file>', help='Output file to dump SQL statements')
     parser.add_argument('-d', '--dbase', default=DEFAULT_DBASE, help='SQLite database full file path')
     parser.add_argument('-v', '--verbose',  action='store_true', help='verbose log level')
+    parser.add_argument('-n', '--name', type=str, help='TESS-W name for specific filtering')
     return parser
 
 
@@ -159,13 +160,16 @@ def trace_reading(name, reading, discard):
     mark = "+++" if not discard else "---"
     log.debug("[%s] (%02d) [%08dT%06d] [%06d] f=%s -> %s", name, reading[2], reading[0], reading[1], reading[3], reading[4], mark)
 
+def debug_reading(name, reading, msg):
+    log.debug("[%s] (%02d) [%08dT%06d] [%06d] f=%s -> %s", name, reading[2], reading[0], reading[1], reading[3], reading[4], msg)
+
 
 def filter_reading(name, row):
         fifo   = gFIFO.get(name, deque(maxlen=FIFO_DEPTH))
         gFIFO[name] = fifo  # Create new fifo if not already
         fifo.append(row)
         if len(fifo) <= FIFO_DEPTH//2:
-            trace_reading(name, row, False)
+            log.debug("[%s] Refilling the buffer", name)
             return None
         seqList   = [ item[3]  for item in fifo ]
         freqList  = [ item[4]  for item in fifo ]
@@ -180,6 +184,17 @@ def filter_reading(name, row):
         trace_reading(name, chosen_row, discard)
         return result
               
+              
+def flush_filter(name):
+    fifo   = gFIFO.get(name, deque(maxlen=FIFO_DEPTH))
+    gFIFO[name] = fifo  # Create new fifo if not already
+    while len(fifo) > FIFO_DEPTH//2:
+        row = fifo.popleft()
+        debug_reading(name, row, "--- (dupl)")
+    while len(fifo) > 0:
+        row = fifo.popleft()
+        trace_reading(name, row, False)
+
 
 # =============
 # MAIN FUNCTION
@@ -192,9 +207,12 @@ def main():
     try:
         options = createParser().parse_args(sys.argv[1:])
         level = log.DEBUG if options.verbose else log.INFO
-        log.basicConfig(filename='zeros.log', filemode='w', level=level, format='%(name)s - %(levelname)s - %(message)s')
+        log.basicConfig(level=level, format='%(name)s - %(levelname)s - %(message)s')
         connection = open_database(options.dbase)
-        tess_names = get_photometer_list(connection)
+        if options.name is None:
+            tess_names = get_photometer_list(connection)
+        else:
+            tess_names = [ options.name ]
         with open(options.file, 'w') as outfile:
             outfile.write("BEGIN TRANSACTION;\n")
             for name in tess_names:
@@ -205,6 +223,7 @@ def main():
                     if new_reading:
                         sql = render_sql(new_reading)
                         outfile.write(sql)
+                flush_filter(name)
             outfile.write("COMMIT;\n")
             
     except KeyboardInterrupt:
