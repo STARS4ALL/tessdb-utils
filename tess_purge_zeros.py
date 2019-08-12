@@ -113,7 +113,7 @@ def fetch_all_dbreadings(connection, name):
     cursor = connection.cursor()
     cursor.execute(
         '''
-        SELECT r.date_id, r.time_id, r.tess_id, r.sequence_number, r.frequency
+        SELECT r.date_id, r.time_id, r.tess_id, r.sequence_number, r.frequency, r.magnitude
         FROM tess_readings_t as r
         JOIN tess_t     as i USING (tess_id)
         WHERE i.name == :name
@@ -131,7 +131,8 @@ def render_sql(data):
     tess_id = data[2]
     seqno   = data[3]
     freq    = data[4]
-    return ("DELETE FROM tess_readings_t WHERE date_id == {0} AND time_id == {1} AND tess_id == {2}; -- seq {3} freq {4} \n".format(date_id, time_id, tess_id, seqno, freq))
+    mag     = data[5]
+    return ("DELETE FROM tess_readings_t WHERE date_id == {0} AND time_id == {1} AND tess_id == {2}; -- seq {3} freq {4} mag{5}\n".format(date_id, time_id, tess_id, seqno, freq, mag))
 
 
 # -------------------
@@ -166,10 +167,10 @@ def is_sequence_invalid(aList):
        
 def trace_reading(name, reading, discard):
     mark = "+++" if not discard else "---"
-    log.info("[%s] (%02d) [%08dT%06d] [%06d] f=%s -> %s", name, reading[2], reading[0], reading[1], reading[3], reading[4], mark)
+    log.info("[%s] (%02d) [%08dT%06d] [%06d] f=%s, m=%s -> %s", name, reading[2], reading[0], reading[1], reading[3], reading[4], reading[5], mark)
 
 def debug_reading(name, reading, msg):
-    log.debug("[%s] (%02d) [%08dT%06d] [%06d] f=%s -> %s", name, reading[2], reading[0], reading[1], reading[3], reading[4], msg)
+    log.debug("[%s] (%02d) [%08dT%06d] [%06d] f=%s, m=%s -> %s", name, reading[2], reading[0], reading[1], reading[3], reading[4], reading[5], msg)
 
 
 def filter_reading(name, row):
@@ -179,9 +180,10 @@ def filter_reading(name, row):
             return None
         seqList   = [ item[3]  for item in gFIFO ]
         freqList  = [ item[4]  for item in gFIFO ]
-        log.debug("%s: seqList = %s. freqList = %s", name, seqList, freqList)
+        magList  =  [ item[5]  for item in gFIFO ]
+        log.debug("%s: seqList = %s. freqList = %s, magList =%s", name, seqList, freqList, magList)
         chosen_row = gFIFO[FIFO_DEPTH//2]
-        if  is_sequence_invalid(freqList):
+        if  is_sequence_invalid(magList):
             discard = True
             result  = chosen_row
         else:
