@@ -64,7 +64,7 @@ def createParser():
     parser.add_argument('file', metavar='<SQL file>', help='Output file to dump SQL statements')
     parser.add_argument('-d', '--dbase', default=DEFAULT_DBASE, help='SQLite database full file path')
     parser.add_argument('-v', '--verbose',  action='store_true', help='verbose log level')
-    parser.add_argument('-n', '--name', type=str, help='TESS-W name for specific filtering')
+    parser.add_argument('-n', '--name', type=str, help='comma-separated list of TESS-W names for specific filtering')
     return parser
 
 
@@ -131,13 +131,22 @@ def render_sql(data):
     tess_id = data[2]
     seqno   = data[3]
     freq    = data[4]
-    #return ("DELETE FROM tess_readings_t WHERE date_id == {0} AND time_id == {1} AND tess_id == {2} AND sequence_number == {3} AND frequency == {4};\n".format(date_id, time_id, tess_id, seqno, freq))
     return ("DELETE FROM tess_readings_t WHERE date_id == {0} AND time_id == {1} AND tess_id == {2}; -- seq {3} freq {4} \n".format(date_id, time_id, tess_id, seqno, freq))
 
 
 # -------------------
 # AUXILIARY FUNCTIONS
 # -------------------
+
+
+def chop(string, sep=None):
+    '''Chop a list of strings, separated by sep and 
+    strips individual string items from leading and trailing blanks'''
+    chopped = [ elem.strip() for elem in string.split(sep) ]
+    if len(chopped) == 1 and chopped[0] == '':
+        chopped = []
+    return chopped
+
 
 def is_sequence_monotonic(aList):
         # Calculate first difference
@@ -207,7 +216,7 @@ def main():
         if options.name is None:
             tess_names = get_photometer_list(connection)
         else:
-            tess_names = [ options.name ]
+            tess_names = chop(options.name, ',')
         with open(options.file, 'w') as outfile:
             outfile.write("BEGIN TRANSACTION;\n")
             for name in tess_names:
