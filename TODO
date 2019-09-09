@@ -1,0 +1,26 @@
+# TESS import utility
+
+- Use SQL file as the final output
+
+- search for duplicate sequence nambers in a +- 15 seconds time span
+
+- search for instrument id daily from instrument name from tess_readings_t
+
+- Modify tess_units_t to add source type (real-time or imported)
+ and fix tess_units_id to use
+
+- search for location id daily based on instrument name existing in tess_readings_t
+
+- create an output table similar to tess_readings_t with additional fields_
+	- tess_name
+        - processed_flag
+        - etc.	º
+
+Hitorico de tess y sitios asignados
+
+SELECT DISTINCT i.name, l.site
+FROM tess_readings_t as r
+JOIN tess_t          AS i USING (tess_id)
+JOIN location_t      AS l USING (location_id)
+ORDER BY i.name;
+
