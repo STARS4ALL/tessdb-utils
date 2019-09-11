@@ -39,7 +39,7 @@ import jinja2
 DEFAULT_FILE = "./Estado actualizado de los TESS - Calibración y localización - General.csv"
 DEFAULT_TPLT = "./templates/location-template.j2"
 MEASURING = "Midiendo"
-CURRENT_DATABASE = "/home/pi/dbase/tess.db"
+CURRENT_DATABASE = "/var/dbase/tess.db"
 
 KEYS = [
     ['tess',       0],  # TESS name
