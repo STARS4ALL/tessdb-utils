@@ -86,16 +86,12 @@ def unicode_csv_reader(filename):
 
 def to_dict(row):
     '''Convert a given row from list form to dictionary'''
-    #print("--- BEGIN ---"*3); print(row); 
     result = dict()
     for key in KEYS:
-        #print(key)
         try:
             # if value is empty for a given key, continue
             if row[key[1]] == '':
-                #print("VACIO")
                 continue
-            #print("JOPUTA {0:s}".format(result[key[0]]))
             result[key[0]] = row[key[1]].strip()
         except Exception as e:
             result[key[0]] = "UNKNOWN" 
@@ -119,7 +115,6 @@ def to_dict(row):
     result['operable'] = True if result['status'].lower().startswith(MEASURING) else False
     result['database'] = CURRENT_DATABASE
     result['tess'] = 'stars' + str(tess_index(result['tess']))
-    #print("--- END ---"*3)
     return result
 
 

@@ -1,6 +1,7 @@
 #!/bin/bash
 {% set executable = "/usr/local/bin/tess" %}
 {% for location in locations %}
+<<<<<<< HEAD
 ### {{ location.tess }} ###
 sudo {{ executable }} location create "{{ location.site_name }}" --longitude "{{ location.longitude }}" --latitude "{{ location.latitude }}" --elevation "{{ location.elevation }}" --dbase "{{ location.database }}"
 {% if location.country is defined -%}
