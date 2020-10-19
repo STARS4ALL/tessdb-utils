@@ -1,7 +1,6 @@
 #!/bin/bash
 {% set executable = "/usr/local/bin/tess" %}
 {% for location in locations %}
-<<<<<<< HEAD
 ### {{ location.tess }} ###
 sudo {{ executable }} location create "{{ location.site_name }}" --longitude "{{ location.longitude }}" --latitude "{{ location.latitude }}" --elevation "{{ location.elevation }}" --dbase "{{ location.database }}"
 {% if location.country is defined -%}
@@ -25,6 +24,6 @@ sudo {{ executable }} location update "{{ location.site_name }}" --dbase "{{ loc
 {% if location.org is defined -%}
 sudo {{ executable }} location update "{{ location.site_name }}" --dbase "{{ location.database }}" --org "{{ location.org }}"
 {% endif -%}
-sudo {{ executable }} instrument assign {{ location.tess }} "{{ location.site_name }}" --dbase "{{ location.database }}"
-sudo {{ executable }} instrument enable {{ location.tess }}  --dbase "{{ location.database }}"
+sudo {{ executable }} instrument assign --name {{ location.tess }} --location "{{ location.site_name }}" --dbase "{{ location.database }}"
+sudo {{ executable }} instrument enable -n {{ location.tess }}  --dbase "{{ location.database }}"
 {% endfor -%}
