@@ -1,0 +1,2 @@
+include versioneer.py
+include src/tessutils/_version.py

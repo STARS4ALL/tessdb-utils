@@ -1,3 +1,3 @@
 # tessdb utilities
 
-Assorted collection of scripts for tessdb database maintenance.
+Assorted collection of scripts & utilities for tessdb database maintenance.
