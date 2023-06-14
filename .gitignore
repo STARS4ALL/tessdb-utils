@@ -1,3 +1,5 @@
+build/
+src/tessdb_utils.egg-info/
 __pycache__/
 *.csv
 *.txt

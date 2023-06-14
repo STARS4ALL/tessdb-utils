@@ -31,17 +31,17 @@ CLASSIFIERS  = [
     'Natural Language :: Spanish',
 ]
 
-PACKAGE_DATA = {}
-
-SCRIPTS = [
-    "scripts/tesslocation",
-]
-
-DATA_FILES  = {
+PACKAGE_DATA  = {
     'tessutils': [
         'templates/*.j2',
     ],
 }
+
+DATA_FILES = []
+
+SCRIPTS = [
+    "scripts/tesslocation",
+]
 
 setup(
     name             = PKG_NAME,
