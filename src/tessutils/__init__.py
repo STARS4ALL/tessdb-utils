@@ -34,7 +34,7 @@ DEFAULT_DBASE = '/var/dbase/tess.db'
 __version__ = get_versions()['version']
 
 # DATABASE RESOURCES
-CREATE_TEMPLATE = resource_filename(__name__, os.path.join('templates', 'create-location.j2'))
-
+CREATE_LOCATIONS_TEMPLATE = resource_filename(__name__, os.path.join('templates', 'location-create.j2'))
+PROBLEMATIC_LOCATIONS_TEMPLATE = resource_filename(__name__, os.path.join('templates', 'location-problematic.j2'))
 del get_versions
 

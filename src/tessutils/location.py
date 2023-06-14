@@ -11,6 +11,7 @@
 
 import os
 import csv
+import math
 import logging
 import traceback
 
@@ -24,7 +25,7 @@ import jinja2
 # local imports
 # -------------
 
-from . import CREATE_TEMPLATE
+from . import CREATE_LOCATIONS_TEMPLATE, PROBLEMATIC_LOCATIONS_TEMPLATE
 from .utils import open_database
 
 # ----------------
@@ -70,15 +71,21 @@ def filter_by_name(row, names_iterable):
     return False
 
 def valid_coordinates(row):
-    '''The minimumn requrement is to have real longitude and latitude'''
+    '''
+    Requirement is to have real longitude and latitude
+    and properly bound to 180 degress (longitude) or 90 degrees (latitude)
+    '''
     try:
-        longitude = float(row.get('Longitud'))
-        latitide = float(row.get('Latitud'))
+        longitude = float(row.get('Longitud')) # may raise a ValueError
+        latitude = float(row.get('Latitud'))  # may raise a ValueError
+        if( (math.fabs(longitude) > 180) or  (math.fabs(latitude) > 90)):
+            raise ValueError
     except ValueError:
         flag = False
     else:
         flag = True
     return flag
+    
 
 def invalid_coordinates(row):
     return not valid_coordinates(row)
@@ -101,6 +108,11 @@ def check_disjoint_sets(valid_list, invalid_list):
     
 
 def photometer_filtering(dbase, input_file):
+    '''
+    Analyzes all photometers from the excel and divides them into two categories:
+    - the ones with valid latitud and Longitud coordinates
+    - The rest
+    '''
     connection = open_database(dbase)
     deployed_list = deployment_list(input_file)
     registered_list = database_list(connection)
@@ -112,7 +124,8 @@ def photometer_filtering(dbase, input_file):
     purged_set = check_disjoint_sets(valid_coord_list, invalid_coord_list)
     valid_coord_list = list(filter(partial(filter_by_name, names_iterable=purged_set), valid_coord_list))
     log.info("%d photometers with valid coordinates after the problematic ones have been removed", len(valid_coord_list))
-    return valid_coord_list
+    log.info("%d photometers with invalid coordinates", len(invalid_coord_list))
+    return valid_coord_list, invalid_coord_list
 
 def render(template_path, context):
     if not os.path.exists(template_path):
@@ -129,13 +142,18 @@ def render(template_path, context):
 
 def generate(options):
     log.info("LOCATIONS SCRIPT GENERATION")
-    valid_coord_list = photometer_filtering(options.dbase, options.input_file)
+    valid_coord_list, invalid_coord_list = photometer_filtering(options.dbase, options.input_file)
     context = dict()
     context['locations'] = valid_coord_list
     context['database'] = options.dbase
-    contents = render(CREATE_TEMPLATE, context)
-    with open(options.output_file, "w") as script:
+    contents = render(CREATE_LOCATIONS_TEMPLATE, context)
+    with open(options.output_script, "w") as script:
         script.write(contents)
-    log.info("generated script file at %s", options.output_file)
+    log.info("generated script file at %s", options.output_script)
+    context['locations'] = invalid_coord_list
+    problems = render(PROBLEMATIC_LOCATIONS_TEMPLATE, context)
+    with open(options.problems_csv, "w") as csvfile:
+        csvfile.write(problems)
+    log.info("generated CSV problems file at %s", options.problems_csv)
     
    

@@ -117,7 +117,8 @@ def createParser():
     locg = subparser.add_parser('generate',  help="Generate location creation script")
     locg.add_argument('-d', '--dbase', type=validfile, default=DEFAULT_DBASE, help='SQLite database full file path')
     locg.add_argument('-i', '--input-file', type=validfile, required=True, help='Input CSV file')
-    locg.add_argument('-o', '--output-file', type=str, required=True, help='Output script file to generate')
+    locg.add_argument('-o', '--output-script', type=str, required=True, help='Output script file to generate')
+    locg.add_argument('-p', '--problems-csv', type=str, required=True, help='CSV file with problematic photometers')
 
     return parser
 
