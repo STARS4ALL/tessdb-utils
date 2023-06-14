@@ -85,6 +85,7 @@ def validdir(path):
 # Module global functions
 # -----------------------
 
+
 def createParser():
     # create the top-level parser
     name = os.path.split(os.path.dirname(sys.argv[0]))[-1]
@@ -115,26 +116,27 @@ def createParser():
     subparser = parser_image.add_subparsers(dest='subcommand')
     locg = subparser.add_parser('generate',  help="Generate location creation script")
     locg.add_argument('-d', '--dbase', type=validfile, default=DEFAULT_DBASE, help='SQLite database full file path')
-    locg.add_argument('-i', '--input-file', type=validfile, default=DEFAULT_DBASE, help='Input CSV file')
+    locg.add_argument('-i', '--input-file', type=validfile, required=True, help='Input CSV file')
     locg.add_argument('-o', '--output-file', type=str, required=True, help='Output script file to generate')
 
     return parser
 
-   
-class Options:
-    excep = True
 
 # ================ #
 # MAIN ENTRY POINT #
 # ================ #
 
+
+class Namespace:
+    pass
+
 def main():
     '''
     Utility entry point
     '''
+    options = Namespace()
     try:
-        options = Options() # hack
-        options = createParser().parse_args(sys.argv[1:])
+        options = createParser().parse_args(sys.argv[1:], namespace=options)
         configureLogging(options)
         name = os.path.split(os.path.dirname(sys.argv[0]))[-1]
         log.info(f"============== {name} {__version__} ==============")
@@ -150,7 +152,7 @@ def main():
     except KeyboardInterrupt as e:
         log.critical("[%s] Interrupted by user ", __name__)
     except Exception as e:
-        if(options.excep):
+        if(options.exceptions):
             traceback.print_exc()
         log.critical("[%s] Fatal error => %s", __name__, str(e) )
     finally:
