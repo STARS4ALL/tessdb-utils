@@ -37,11 +37,11 @@ SCRIPTS = [
     "scripts/tesslocation",
 ]
 
-DATA_FILES  = [
+DATA_FILES  = {
     'tessutils': [
         'templates/*.j2',
     ],
-]
+}
 
 setup(
     name             = PKG_NAME,
