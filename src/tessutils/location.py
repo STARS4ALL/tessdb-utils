@@ -85,7 +85,7 @@ def valid_coordinates(row):
     else:
         flag = True
     return flag
-    
+
 
 def invalid_coordinates(row):
     return not valid_coordinates(row)
@@ -106,6 +106,12 @@ def check_disjoint_sets(valid_list, invalid_list):
         log.info("Check photometer complete")
     return valid_set - problem_set
     
+def check_not_empty_sitenames(row):
+    return not (row['Nombre lugar'] == '' or  row['Nombre lugar'].isspace())
+
+def remove_embedded_newlines_in_sitenames(row):
+    row['Nombre lugar'] = row['Nombre lugar'].replace("\n","")
+    return row
 
 def photometer_filtering(dbase, input_file):
     '''
@@ -125,6 +131,8 @@ def photometer_filtering(dbase, input_file):
     valid_coord_list = list(filter(partial(filter_by_name, names_iterable=purged_set), valid_coord_list))
     log.info("%d photometers with valid coordinates after the problematic ones have been removed", len(valid_coord_list))
     log.info("%d photometers with invalid coordinates", len(invalid_coord_list))
+    valid_coord_list = list(filter(check_not_empty_sitenames,valid_coord_list))
+    valid_coord_list = list(map(remove_embedded_newlines_in_sitenames, valid_coord_list))
     return valid_coord_list, invalid_coord_list
 
 def render(template_path, context):

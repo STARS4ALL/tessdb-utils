@@ -24,3 +24,11 @@ JOIN tess_t          AS i USING (tess_id)
 JOIN location_t      AS l USING (location_id)
 ORDER BY i.name;
 
+PROBLEMAS
+=========
+1) tess location create ""
+2) EL RETORNO DE CARRO
+tess location create "Gladstone Inn
+" --longitude "175.6311110" --latitude "-41.0725000" --elevation "0.0" --dbase "/var/dbase/tess.db"
+3) Error => name 'photometer' is not defined
+4) Error => You did not supply a value for binding 1.
