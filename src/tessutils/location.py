@@ -179,7 +179,8 @@ def generate_json(path, iterable):
 
 def geolocate(iterable):
     addresses = list()
-    excel = list()
+    fixed = list()
+    not_fixed = list()
     geolocator = Nominatim(user_agent="STARS4ALL project")
     geocode = RateLimiter(geolocator.geocode, min_delay_seconds=2)
     for row in iterable:
@@ -191,23 +192,29 @@ def geolocate(iterable):
         address['stars4all']['latitude'] = row['Latitud']
         addresses.append(address)
         found = False
-        for location_type in ('leisure', 'amenity', 'tourism', 'building', 'hamlet', 'road'):
+        for location_type in ('leisure', 'amenity', 'tourism', 'building', 'road', 'hamlet',):
             try:
                 row['Nombre lugar'] = address[location_type]
             except KeyError:
-                address['stars4all']['location_type'] = None
-                address['stars4all']['location_name'] = None
-                continue
+                continue   
             else:
                 found = True
-                address['stars4all']['location_type'] = location_type
-                address['stars4all']['location_name'] = address[location_type]
-                excel.append(row)
-                log.info("assigning %s -> '%s'  as place name to %s",location_type, address[location_type], row['stars'])
+                if location_type == 'road' and address.get('house_number'):
+                    row['Nombre lugar'] = address[location_type] + ", " + address['house_number']
+                    address['stars4all']['location_type'] = 'road + house_number'
+                else:
+                    address['stars4all']['location_type'] = location_type
+                address['stars4all']['location_name'] = row['Nombre lugar']
                 break
-        if not found:
+        if found:
+            fixed.append(row)
+            log.debug("assigning %s -> '%s'  as place name to %s",location_type, address[location_type], row['stars'])
+        else:
+            address['stars4all']['location_type'] = None
+            address['stars4all']['location_name'] = None
+            not_fixed.append(row)
             log.warn("still without a valid place name to %s",row['stars'])
-    return excel, addresses
+    return fixed, not_fixed, addresses
 
 
 # ===================
@@ -222,11 +229,16 @@ def generate(options):
     generate_csv(options.invalid_csv, invalid_coord_list, headers_list)
     log.info("generated CSV invalid coordinates file at %s", options.invalid_csv)
     
-    empty_sites_list, addresses_json = geolocate(empty_sites_list)
+    empty_sites_fixed_list, empty_sites_not_fixed_list, addresses_json = geolocate(empty_sites_list)
 
-    path =  options.empty_sites + ".csv"
-    generate_csv(path, empty_sites_list, headers_list)
-    log.info("generated CSV empty site names file at %s", path)
+    path =  options.empty_sites + "_fixed.csv"
+    generate_csv(path, empty_sites_fixed_list, headers_list)
+    log.info("generated CSV fixed empty site names file at %s", path)
+
+    path =  options.empty_sites + "_not_fixed.csv"
+    generate_csv(path, empty_sites_not_fixed_list, headers_list)
+    log.info("generated CSV not fixed empty site names file at %s", path)
+    
     
     path =  options.empty_sites + ".json"
     generate_json(path, addresses_json)
