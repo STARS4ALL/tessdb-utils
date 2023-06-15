@@ -118,7 +118,8 @@ def createParser():
     locg.add_argument('-d', '--dbase', type=validfile, default=DEFAULT_DBASE, help='SQLite database full file path')
     locg.add_argument('-i', '--input-file', type=validfile, required=True, help='Input CSV file')
     locg.add_argument('-o', '--output-script', type=str, required=True, help='Output script file to generate')
-    locg.add_argument('-p', '--problems-csv', type=str, required=True, help='CSV file with problematic photometers')
+    locg.add_argument('-p', '--invalid-csv', type=str, required=True, help='Output CSV file with photometers & invalid coord.')
+    locg.add_argument('-e', '--empty-sites', type=str, required=True, help='Output files prefix for .csv and .json empty site names')
 
     return parser
 

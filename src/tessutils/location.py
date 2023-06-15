@@ -12,6 +12,7 @@
 import os
 import csv
 import math
+import json
 import logging
 import traceback
 
@@ -20,6 +21,8 @@ import traceback
 # -------------------
 
 import jinja2
+from geopy.geocoders import Nominatim
+from geopy.extra.rate_limiter import RateLimiter
 
 #--------------
 # local imports
@@ -44,9 +47,9 @@ log = logging.getLogger('location')
 # Module auxiliar functions
 # -------------------------
 
-def deployment_list(path):
+def deployment_list(path, headers):
     with open(path, newline='') as csvfile:
-        reader = csv.DictReader(csvfile, delimiter=',')
+        reader = csv.DictReader(csvfile, fieldnames=headers, delimiter=',')
         return [row for row in reader]
     
 
@@ -109,31 +112,42 @@ def check_disjoint_sets(valid_list, invalid_list):
 def check_not_empty_sitenames(row):
     return not (row['Nombre lugar'] == '' or  row['Nombre lugar'].isspace())
 
+def check_empty_sitenames(row):
+    return (row['Nombre lugar'] == '' or  row['Nombre lugar'].isspace())
+
 def remove_embedded_newlines_in_sitenames(row):
     row['Nombre lugar'] = row['Nombre lugar'].replace("\n","")
     return row
 
-def photometer_filtering(dbase, input_file):
+def headers(path, separator=","):
+    with open(path) as f:
+        headers = f.readline().replace("\n","").split(separator)
+    log.info("headers = %s",headers)
+    return headers
+
+def photometer_filtering(dbase, input_file, headers_list):
     '''
     Analyzes all photometers from the excel and divides them into two categories:
     - the ones with valid latitud and Longitud coordinates
     - The rest
     '''
     connection = open_database(dbase)
-    deployed_list = deployment_list(input_file)
+    deployed_list = deployment_list(input_file, headers_list)
     registered_list = database_list(connection)
     matching_list = list(filter(partial(filter_by_name, names_iterable=registered_list), deployed_list))
     log.info("Matched %d photometers", len(matching_list))
     valid_coord_list = list(filter(valid_coordinates, matching_list))
-    log.info("%d photometers with valid coordinates", len(valid_coord_list))
     invalid_coord_list = list(filter(invalid_coordinates, matching_list))
+    log.info("%d photometers with invalid coordinates", len(valid_coord_list))
     purged_set = check_disjoint_sets(valid_coord_list, invalid_coord_list)
     valid_coord_list = list(filter(partial(filter_by_name, names_iterable=purged_set), valid_coord_list))
     log.info("%d photometers with valid coordinates after the problematic ones have been removed", len(valid_coord_list))
-    log.info("%d photometers with invalid coordinates", len(invalid_coord_list))
-    valid_coord_list = list(filter(check_not_empty_sitenames,valid_coord_list))
-    valid_coord_list = list(map(remove_embedded_newlines_in_sitenames, valid_coord_list))
-    return valid_coord_list, invalid_coord_list
+    empty_sites_list = list(filter(check_empty_sitenames,valid_coord_list))
+    log.info("%d photometers with empty site names", len(empty_sites_list))
+    final_list = list(filter(check_not_empty_sitenames,valid_coord_list))
+    final_list = list(map(remove_embedded_newlines_in_sitenames, final_list))
+    log.info("%d photometers for final scrpt", len(final_list))
+    return final_list, empty_sites_list, invalid_coord_list
 
 def render(template_path, context):
     if not os.path.exists(template_path):
@@ -143,6 +157,58 @@ def render(template_path, context):
         loader=jinja2.FileSystemLoader(path or './')
     ).get_template(filename).render(context)
 
+def generate_csv(path, iterable, fieldnames):
+    with open(path, "w") as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in iterable:
+            writer.writerow(row)
+   
+def generate_script(path, valid_coords_iterable, dbpath):
+    context = dict()
+    context['locations'] = valid_coords_iterable
+    context['database'] = dbpath
+    contents = render(CREATE_LOCATIONS_TEMPLATE, context)
+    with open(path, "w") as script:
+        script.write(contents)
+    
+def generate_json(path, iterable):
+    with open(path, "w") as fd:
+        json.dump(iterable, fd, indent=2)
+
+
+def geolocate(iterable):
+    addresses = list()
+    excel = list()
+    geolocator = Nominatim(user_agent="STARS4ALL project")
+    geocode = RateLimiter(geolocator.geocode, min_delay_seconds=2)
+    for row in iterable:
+        location = geolocator.reverse(f"{row['Latitud']}, {row['Longitud']}", language="en")
+        address = location.raw['address']
+        address['stars4all'] = dict()
+        address['stars4all']['photometer'] = row['stars']
+        address['stars4all']['longitude'] = row['Longitud']
+        address['stars4all']['latitude'] = row['Latitud']
+        addresses.append(address)
+        found = False
+        for location_type in ('leisure', 'amenity', 'tourism', 'building', 'hamlet', 'road'):
+            try:
+                row['Nombre lugar'] = address[location_type]
+            except KeyError:
+                address['stars4all']['location_type'] = None
+                address['stars4all']['location_name'] = None
+                continue
+            else:
+                found = True
+                address['stars4all']['location_type'] = location_type
+                address['stars4all']['location_name'] = address[location_type]
+                excel.append(row)
+                log.info("assigning %s -> '%s'  as place name to %s",location_type, address[location_type], row['stars'])
+                break
+        if not found:
+            log.warn("still without a valid place name to %s",row['stars'])
+    return excel, addresses
+
 
 # ===================
 # Module entry points
@@ -150,18 +216,25 @@ def render(template_path, context):
 
 def generate(options):
     log.info("LOCATIONS SCRIPT GENERATION")
-    valid_coord_list, invalid_coord_list = photometer_filtering(options.dbase, options.input_file)
-    context = dict()
-    context['locations'] = valid_coord_list
-    context['database'] = options.dbase
-    contents = render(CREATE_LOCATIONS_TEMPLATE, context)
-    with open(options.output_script, "w") as script:
-        script.write(contents)
+    headers_list = headers(options.input_file)
+    valid_coord_list, empty_sites_list, invalid_coord_list = photometer_filtering(options.dbase, options.input_file, headers_list)
+  
+    generate_csv(options.invalid_csv, invalid_coord_list, headers_list)
+    log.info("generated CSV invalid coordinates file at %s", options.invalid_csv)
+    
+    empty_sites_list, addresses_json = geolocate(empty_sites_list)
+
+    path =  options.empty_sites + ".csv"
+    generate_csv(path, empty_sites_list, headers_list)
+    log.info("generated CSV empty site names file at %s", path)
+    
+    path =  options.empty_sites + ".json"
+    generate_json(path, addresses_json)
+    log.info("generated geolocalized JSON file at %s", path)
+
+
+    generate_script(options.output_script, valid_coord_list, options.dbase)
     log.info("generated script file at %s", options.output_script)
-    context['locations'] = invalid_coord_list
-    problems = render(PROBLEMATIC_LOCATIONS_TEMPLATE, context)
-    with open(options.problems_csv, "w") as csvfile:
-        csvfile.write(problems)
-    log.info("generated CSV problems file at %s", options.problems_csv)
+    
     
    

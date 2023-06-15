@@ -13,6 +13,7 @@ KEYWORDS     = ['Light Pollution','Astronomy']
 URL          = 'http://github.com/STARS4ALL/tessdb-utils/'
 DEPENDENCIES = [
     'jinja2',
+    'geopy',
     'tabulate',
 ]
 
