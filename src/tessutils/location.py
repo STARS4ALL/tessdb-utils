@@ -36,6 +36,10 @@ from .utils import open_database
 # ----------------
 
 DESPLIEGUE = "Fotometros TESS-W - Despliegue.csv"
+LONGITUDE = 'Longitud'
+LATITUDE = 'Latitud'
+NAME = 'stars'
+SITE_NAME = 'Nombre lugar'
 
 # -----------------------
 # Module global variables
@@ -69,7 +73,7 @@ from functools import partial
 
 
 def filter_by_name(row, names_iterable):
-    if row['stars'] in names_iterable:
+    if row[NAME] in names_iterable:
         return True
     return False
 
@@ -79,8 +83,8 @@ def valid_coordinates(row):
     and properly bound to 180 degress (longitude) or 90 degrees (latitude)
     '''
     try:
-        longitude = float(row.get('Longitud')) # may raise a ValueError
-        latitude = float(row.get('Latitud'))  # may raise a ValueError
+        longitude = float(row.get(LONGITUDE)) # may raise a ValueError
+        latitude = float(row.get(LATITUDE))  # may raise a ValueError
         if( (math.fabs(longitude) > 180) or  (math.fabs(latitude) > 90)):
             raise ValueError
     except ValueError:
@@ -99,8 +103,8 @@ def check_disjoint_sets(valid_list, invalid_list):
     Check if a given photometer is at the same time in the valid list with valid coordinates
     and the invalid list with invalid coordinates
     '''
-    valid_set = set([row['stars'] for row in valid_list])
-    invalid_set = set([row['stars'] for row in invalid_list])
+    valid_set = set([row[NAME] for row in valid_list])
+    invalid_set = set([row[NAME] for row in invalid_list])
     problem_set = valid_set.intersection(invalid_set)
     if (len(problem_set)):
         log.info("The following set of photometers have lines in the spreadhseet with both valid and invalid coordinates at the same time:")
@@ -110,13 +114,13 @@ def check_disjoint_sets(valid_list, invalid_list):
     return valid_set - problem_set
     
 def check_not_empty_sitenames(row):
-    return not (row['Nombre lugar'] == '' or  row['Nombre lugar'].isspace())
+    return not (row[SITE_NAME] == '' or  row[SITE_NAME].isspace())
 
 def check_empty_sitenames(row):
-    return (row['Nombre lugar'] == '' or  row['Nombre lugar'].isspace())
+    return (row[SITE_NAME] == '' or  row[SITE_NAME].isspace())
 
 def remove_embedded_newlines_in_sitenames(row):
-    row['Nombre lugar'] = row['Nombre lugar'].replace("\n","")
+    row[SITE_NAME] = row[SITE_NAME].replace("\n","")
     return row
 
 def fieldnames(path, separator=","):
@@ -184,36 +188,36 @@ def geolocate(iterable):
     geolocator = Nominatim(user_agent="STARS4ALL project")
     geocode = RateLimiter(geolocator.geocode, min_delay_seconds=2)
     for row in iterable:
-        location = geolocator.reverse(f"{row['Latitud']}, {row['Longitud']}", language="en")
+        location = geolocator.reverse(f"{row[LATITUDE]}, {row[LONGITUDE]}", language="en")
         address = location.raw['address']
         address['stars4all'] = dict()
-        address['stars4all']['photometer'] = row['stars']
-        address['stars4all']['longitude'] = row['Longitud']
-        address['stars4all']['latitude'] = row['Latitud']
+        address['stars4all']['photometer'] = row[NAME]
+        address['stars4all']['longitude'] = row[LONGITUDE]
+        address['stars4all']['latitude'] = row[LATITUDE]
         addresses.append(address)
         found = False
         for location_type in ('leisure', 'amenity', 'tourism', 'building', 'road', 'hamlet',):
             try:
-                row['Nombre lugar'] = address[location_type]
+                row[SITE_NAME] = address[location_type]
             except KeyError:
                 continue   
             else:
                 found = True
                 if location_type == 'road' and address.get('house_number'):
-                    row['Nombre lugar'] = address[location_type] + ", " + address['house_number']
+                    row[SITE_NAME] = address[location_type] + ", " + address['house_number']
                     address['stars4all']['location_type'] = 'road + house_number'
                 else:
                     address['stars4all']['location_type'] = location_type
-                address['stars4all']['location_name'] = row['Nombre lugar']
+                address['stars4all']['location_name'] = row[SITE_NAME]
                 break
         if found:
             fixed.append(row)
-            log.debug("assigning %s -> '%s'  as place name to %s",location_type, address[location_type], row['stars'])
+            log.debug("assigning %s -> '%s'  as place name to %s",location_type, address[location_type], row[NAME])
         else:
             address['stars4all']['location_type'] = None
             address['stars4all']['location_name'] = None
             not_fixed.append(row)
-            log.warn("still without a valid place name to %s",row['stars'])
+            log.warn("still without a valid place name to %s",row[NAME])
     return fixed, not_fixed, addresses
 
 
@@ -228,25 +232,25 @@ def generate(options):
     
     empty_sites_fixed, empty_sites_not_fixed, addresses_json = geolocate(empty_sites)
 
-    path =  options.output_prefix + "_empty_fixed.csv"
+    path =  options.output_prefix + "_empty_sites_fixed.csv"
     generate_csv(path, empty_sites_fixed, headers)
-    log.info("generated CSV fixed empty site names file at %s", path)
+    log.info("generated CSV file -> %s", path)
 
-    path =  options.output_prefix + "_empty_not_fixed.csv"
+    path =  options.output_prefix + "_empty_sites_not_fixed.csv"
     generate_csv(path, empty_sites_not_fixed, headers)
-    log.info("generated CSV not fixed empty site names file at %s", path)
+    log.info("generated CSV file -> %s", path)
     
-    path =  options.output_prefix + "_empty_geoloc.json"
+    path =  options.output_prefix + "_empty_sites_geoloc.json"
     generate_json(path, addresses_json)
-    log.info("generated geolocalized JSON file at %s", path)
+    log.info("generated CSV file -> %s", path)
 
     path =  options.output_prefix + "_invalid_coords.csv"
     generate_csv(path, invalid_coords, headers)
-    log.info("generated CSV not fixed empty site names file at %s", path)
+    log.info("generated CSV file -> %s", path)
 
     path = options.output_prefix + ".sh"
     generate_script(path, valid_coords, options.dbase)
-    log.info("generated script file with valid coords at %s", path)
+    log.info("generated script file with valid coords -> %s", path)
     
     
    
