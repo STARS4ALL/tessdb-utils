@@ -119,20 +119,20 @@ def remove_embedded_newlines_in_sitenames(row):
     row['Nombre lugar'] = row['Nombre lugar'].replace("\n","")
     return row
 
-def headers(path, separator=","):
+def fieldnames(path, separator=","):
     with open(path) as f:
         headers = f.readline().replace("\n","").split(separator)
     log.info("headers = %s",headers)
     return headers
 
-def photometer_filtering(dbase, input_file, headers_list):
+def photometer_filtering(dbase, input_file, headers):
     '''
     Analyzes all photometers from the excel and divides them into two categories:
     - the ones with valid latitud and Longitud coordinates
     - The rest
     '''
     connection = open_database(dbase)
-    deployed_list = deployment_list(input_file, headers_list)
+    deployed_list = deployment_list(input_file, headers)
     registered_list = database_list(connection)
     matching_list = list(filter(partial(filter_by_name, names_iterable=registered_list), deployed_list))
     log.info("Matched %d photometers", len(matching_list))
@@ -223,30 +223,30 @@ def geolocate(iterable):
 
 def generate(options):
     log.info("LOCATIONS SCRIPT GENERATION")
-    headers_list = headers(options.input_file)
-    valid_coord_list, empty_sites_list, invalid_coord_list = photometer_filtering(options.dbase, options.input_file, headers_list)
-  
-    generate_csv(options.invalid_csv, invalid_coord_list, headers_list)
-    log.info("generated CSV invalid coordinates file at %s", options.invalid_csv)
+    headers = fieldnames(options.input_file)
+    valid_coords, empty_sites, invalid_coords = photometer_filtering(options.dbase, options.input_file, headers)
     
-    empty_sites_fixed_list, empty_sites_not_fixed_list, addresses_json = geolocate(empty_sites_list)
+    empty_sites_fixed, empty_sites_not_fixed, addresses_json = geolocate(empty_sites)
 
-    path =  options.empty_sites + "_fixed.csv"
-    generate_csv(path, empty_sites_fixed_list, headers_list)
+    path =  options.output_prefix + "_empty_fixed.csv"
+    generate_csv(path, empty_sites_fixed, headers)
     log.info("generated CSV fixed empty site names file at %s", path)
 
-    path =  options.empty_sites + "_not_fixed.csv"
-    generate_csv(path, empty_sites_not_fixed_list, headers_list)
+    path =  options.output_prefix + "_empty_not_fixed.csv"
+    generate_csv(path, empty_sites_not_fixed, headers)
     log.info("generated CSV not fixed empty site names file at %s", path)
     
-    
-    path =  options.empty_sites + ".json"
+    path =  options.output_prefix + "_empty_geoloc.json"
     generate_json(path, addresses_json)
     log.info("generated geolocalized JSON file at %s", path)
 
+    path =  options.output_prefix + "_invalid_coords.csv"
+    generate_csv(path, invalid_coords, headers)
+    log.info("generated CSV not fixed empty site names file at %s", path)
 
-    generate_script(options.output_script, valid_coord_list, options.dbase)
-    log.info("generated script file at %s", options.output_script)
+    path = options.output_prefix + ".sh"
+    generate_script(path, valid_coords, options.dbase)
+    log.info("generated script file with valid coords at %s", path)
     
     
    
